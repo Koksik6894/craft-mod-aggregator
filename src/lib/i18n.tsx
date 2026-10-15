@@ -1,15 +1,18 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-type Dict = {
+type BaseDict = {
   tagline: string; total: string; mods: string; followers: string; myMods: string;
   contact: string; contactTitle: string; contactText: string; send: string;
   suggest: string; commission: string; updated: string; viewOn: string; downloads: string;
   copy: string; copied: string;
+};
+
+type Dict = BaseDict & {
   sort: string; sortDownloads: string; sortNewest: string; sortAZ: string;
   support: string; back: string; accent: string;
 };
 
-export const LANGS: Record<string, { name: string; flag: string; t: Dict }> = {
+export const LANGS: Record<string, { name: string; flag: string; t: BaseDict }> = {
   pl: { name: "Polski", flag: "🇵🇱", t: { tagline: "Tworzę mody do Minecrafta, które po prostu działają.", total: "Łącznie pobrań", mods: "Modów", followers: "Obserwujących", myMods: "Moje mody", contact: "Kontakt", contactTitle: "Masz pomysł na moda?", contactText: "Napisz do mnie z sugestią, zgłoszeniem błędu albo zamówieniem własnego moda.", send: "Napisz maila", suggest: "Sugestia", commission: "Zamów moda", updated: "Aktualizacja", viewOn: "Zobacz na", downloads: "pobrań", copy: "Kopiuj", copied: "Skopiowano!" } },
   en: { name: "English", flag: "🇬🇧", t: { tagline: "I build Minecraft mods that just work.", total: "Total downloads", mods: "Mods", followers: "Followers", myMods: "My mods", contact: "Contact", contactTitle: "Got a mod idea?", contactText: "Send me a suggestion, a bug report or a custom mod request.", send: "Send an email", suggest: "Suggestion", commission: "Commission a mod", updated: "Updated", viewOn: "View on", downloads: "downloads", copy: "Copy", copied: "Copied!" } },
   de: { name: "Deutsch", flag: "🇩🇪", t: { tagline: "Ich baue Minecraft-Mods, die einfach funktionieren.", total: "Downloads gesamt", mods: "Mods", followers: "Follower", myMods: "Meine Mods", contact: "Kontakt", contactTitle: "Eine Mod-Idee?", contactText: "Schick mir Vorschläge, Fehlerberichte oder Anfragen für eigene Mods.", send: "E-Mail senden", suggest: "Vorschlag", commission: "Mod beauftragen", updated: "Aktualisiert", viewOn: "Ansehen auf", downloads: "Downloads", copy: "Kopieren", copied: "Kopiert!" } },
@@ -78,7 +81,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
   useEffect(() => {
-    document.documentElement.dataset.accent = accent;
+    document.documentElement.dataset["accent"] = accent;
   }, [accent]);
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -86,7 +89,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setLang = (l: string) => { setLangS(l); localStorage.setItem("lang", l); };
   const setAccent = (a: string) => { setAccentS(a); localStorage.setItem("accent", a); };
   const toggleDark = () => setDark((d) => { localStorage.setItem("theme", d ? "light" : "dark"); return !d; });
-  const t: Dict = { ...LANGS.pl!.t, ...(LANGS[lang] ?? LANGS.pl!).t, ...EXTRA.en, ...(EXTRA[lang] ?? {}) };
+  const t = { ...LANGS["pl"]!.t, ...(LANGS[lang] ?? LANGS["pl"]!).t, ...EXTRA["en"], ...(EXTRA[lang] ?? {}) } as Dict;
   return <C.Provider value={{ lang, setLang, t, dark, toggleDark, accent, setAccent }}>{children}</C.Provider>;
 }
 
