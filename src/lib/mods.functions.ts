@@ -8,6 +8,7 @@ export type Mod = {
   categories: string[];
   loaders: string[];
   updated: string | null;
+  modrinthSlug?: string;
   modrinth?: { url: string; downloads: number; followers: number };
   curseforge?: { url: string; downloads: number };
   total: number;
@@ -15,6 +16,7 @@ export type Mod = {
 
 const CF_AUTHOR = "krysztok";
 const MR_USER = "Krysztok";
+const UA = { "User-Agent": "krysztok-portfolio/1.0 (krysztokdev@gmail.com)" };
 
 const norm = (s: string) =>
   s.replace(/\(.*?\)/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -24,7 +26,7 @@ export const getMods = createServerFn({ method: "GET" }).handler(async () => {
 
   try {
     const r = await fetch(`https://api.modrinth.com/v2/user/${MR_USER}/projects`, {
-      headers: { "User-Agent": "krysztok-portfolio/1.0 (krysztokdev@gmail.com)" },
+      headers: UA,
     });
     if (r.ok) {
       const list = (await r.json()) as any[];
@@ -39,6 +41,7 @@ export const getMods = createServerFn({ method: "GET" }).handler(async () => {
           categories: p.categories ?? [],
           loaders: p.loaders ?? [],
           updated: p.updated ?? null,
+          modrinthSlug: p.slug,
           modrinth: {
             url: `https://modrinth.com/${p.project_type}/${p.slug}`,
             downloads: p.downloads ?? 0,
@@ -110,3 +113,23 @@ export const getMods = createServerFn({ method: "GET" }).handler(async () => {
     fetchedAt: new Date().toISOString(),
   };
 });
+
+export const getMod = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => (typeof d === "string" ? d : String(d ?? "")))
+  .handler(async ({ data: key }) => {
+    const all = await getMods();
+    const mod = all.mods.find((m) => m.key === key) ?? null;
+    let body: string | null = null;
+    if (mod?.modrinthSlug) {
+      try {
+        const r = await fetch(`https://api.modrinth.com/v2/project/${mod.modrinthSlug}`, { headers: UA });
+        if (r.ok) {
+          const p = (await r.json()) as { body?: string };
+          body = typeof p.body === "string" ? p.body : null;
+        }
+      } catch (e) {
+        console.error("modrinth body", e);
+      }
+    }
+    return { mod, body };
+  });

@@ -5,6 +5,8 @@ type Dict = {
   contact: string; contactTitle: string; contactText: string; send: string;
   suggest: string; commission: string; updated: string; viewOn: string; downloads: string;
   copy: string; copied: string;
+  sort: string; sortDownloads: string; sortNewest: string; sortAZ: string;
+  support: string; back: string; accent: string;
 };
 
 export const LANGS: Record<string, { name: string; flag: string; t: Dict }> = {
@@ -25,12 +27,42 @@ export const LANGS: Record<string, { name: string; flag: string; t: Dict }> = {
   zh: { name: "中文", flag: "🇨🇳", t: { tagline: "我制作好用的 Minecraft 模组。", total: "总下载量", mods: "模组", followers: "关注者", myMods: "我的模组", contact: "联系", contactTitle: "有模组点子吗？", contactText: "欢迎发送建议、错误报告或定制模组请求。", send: "发送邮件", suggest: "建议", commission: "定制模组", updated: "更新于", viewOn: "查看于", downloads: "次下载", copy: "复制", copied: "已复制！" } },
 };
 
-type Ctx = { lang: string; setLang: (l: string) => void; t: Dict; dark: boolean; toggleDark: () => void };
+// Translations for the newest features, merged over the English set when a language misses them.
+const EXTRA: Record<string, Partial<Dict>> = {
+  pl: { sort: "Sortuj", sortDownloads: "Najwięcej pobrań", sortNewest: "Najnowsze", sortAZ: "A–Z", support: "Wesprzyj mnie", back: "Wszystkie mody", accent: "Kolor strony" },
+  en: { sort: "Sort", sortDownloads: "Most downloads", sortNewest: "Newest", sortAZ: "A–Z", support: "Support me", back: "All mods", accent: "Accent color" },
+  de: { sort: "Sortieren", sortDownloads: "Meiste Downloads", sortNewest: "Neueste", sortAZ: "A–Z", support: "Unterstütze mich", back: "Alle Mods", accent: "Akzentfarbe" },
+  es: { sort: "Ordenar", sortDownloads: "Más descargas", sortNewest: "Más recientes", sortAZ: "A–Z", support: "Apóyame", back: "Todos los mods", accent: "Color de acento" },
+  fr: { sort: "Trier", sortDownloads: "Plus de téléchargements", sortNewest: "Plus récents", sortAZ: "A–Z", support: "Soutenez-moi", back: "Tous les mods", accent: "Couleur d'accent" },
+  it: { sort: "Ordina", sortDownloads: "Più download", sortNewest: "Più recenti", sortAZ: "A–Z", support: "Sostienimi", back: "Tutte le mod", accent: "Colore d'accento" },
+  pt: { sort: "Ordenar", sortDownloads: "Mais downloads", sortNewest: "Mais recentes", sortAZ: "A–Z", support: "Apoie-me", back: "Todos os mods", accent: "Cor de destaque" },
+  nl: { sort: "Sorteren", sortDownloads: "Meeste downloads", sortNewest: "Nieuwste", sortAZ: "A–Z", support: "Steun mij", back: "Alle mods", accent: "Accentkleur" },
+  cs: { sort: "Řadit", sortDownloads: "Nejvíc stažení", sortNewest: "Nejnovější", sortAZ: "A–Z", support: "Podpoř mě", back: "Všechny módy", accent: "Barva motivu" },
+  uk: { sort: "Сортувати", sortDownloads: "Найбільше завантажень", sortNewest: "Найновіші", sortAZ: "A–Z", support: "Підтримай мене", back: "Усі моди", accent: "Колір сайту" },
+  ru: { sort: "Сортировка", sortDownloads: "Больше всего загрузок", sortNewest: "Новейшие", sortAZ: "A–Z", support: "Поддержи меня", back: "Все моды", accent: "Цвет сайта" },
+  tr: { sort: "Sırala", sortDownloads: "En çok indirme", sortNewest: "En yeni", sortAZ: "A–Z", support: "Bana destek ol", back: "Tüm modlar", accent: "Vurgu rengi" },
+  ja: { sort: "並べ替え", sortDownloads: "DL数順", sortNewest: "新着順", sortAZ: "A–Z", support: "応援する", back: "すべてのMOD", accent: "アクセントカラー" },
+  ko: { sort: "정렬", sortDownloads: "다운로드순", sortNewest: "최신순", sortAZ: "A–Z", support: "후원하기", back: "모든 모드", accent: "강조 색상" },
+  zh: { sort: "排序", sortDownloads: "下载最多", sortNewest: "最新", sortAZ: "A–Z", support: "支持我", back: "所有模组", accent: "主题颜色" },
+};
+
+export const ACCENTS = [
+  { id: "emerald", name: "Emerald", hex: "#3ecf6e" },
+  { id: "violet", name: "Violet", hex: "#a855f7" },
+  { id: "blue", name: "Blue", hex: "#3b82f6" },
+  { id: "orange", name: "Orange", hex: "#f97316" },
+  { id: "rose", name: "Rose", hex: "#f43f5e" },
+] as const;
+
+export const SUPPORT_URL = "https://ko-fi.com/krysztok";
+
+type Ctx = { lang: string; setLang: (l: string) => void; t: Dict; dark: boolean; toggleDark: () => void; accent: string; setAccent: (a: string) => void };
 const C = createContext<Ctx | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [lang, setLangS] = useState("pl");
   const [dark, setDark] = useState(true);
+  const [accent, setAccentS] = useState("emerald");
   useEffect(() => {
     const l = localStorage.getItem("lang");
     if (l && LANGS[l]) setLangS(l);
@@ -39,16 +71,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (LANGS[nav]) setLangS(nav);
     }
     setDark(localStorage.getItem("theme") !== "light");
+    const a = localStorage.getItem("accent");
+    if (a && ACCENTS.some((x) => x.id === a)) setAccentS(a);
   }, []);
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
   useEffect(() => {
+    document.documentElement.dataset.accent = accent;
+  }, [accent]);
+  useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
   const setLang = (l: string) => { setLangS(l); localStorage.setItem("lang", l); };
+  const setAccent = (a: string) => { setAccentS(a); localStorage.setItem("accent", a); };
   const toggleDark = () => setDark((d) => { localStorage.setItem("theme", d ? "light" : "dark"); return !d; });
-  return <C.Provider value={{ lang, setLang, t: (LANGS[lang] ?? LANGS['pl']!).t, dark, toggleDark }}>{children}</C.Provider>;
+  const t: Dict = { ...LANGS.pl!.t, ...(LANGS[lang] ?? LANGS.pl!).t, ...EXTRA.en, ...(EXTRA[lang] ?? {}) };
+  return <C.Provider value={{ lang, setLang, t, dark, toggleDark, accent, setAccent }}>{children}</C.Provider>;
 }
 
 export const useApp = () => useContext(C)!;
