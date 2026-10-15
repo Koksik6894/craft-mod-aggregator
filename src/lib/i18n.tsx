@@ -48,7 +48,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [lang]);
   const setLang = (l: string) => { setLangS(l); localStorage.setItem("lang", l); };
   const toggleDark = () => setDark((d) => { localStorage.setItem("theme", d ? "light" : "dark"); return !d; });
-  return <C.Provider value={{ lang, setLang, t: LANGS[lang].t, dark, toggleDark }}>{children}</C.Provider>;
+  return <C.Provider value={{ lang, setLang, t: (LANGS[lang] ?? LANGS.pl!).t, dark, toggleDark }}>{children}</C.Provider>;
 }
 
 export const useApp = () => useContext(C)!;
