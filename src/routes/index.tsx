@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { Download, Heart, Package, ExternalLink, Flame } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Download, Heart, Package, Flame, ArrowUpDown } from "lucide-react";
 import { getMods, type Mod } from "@/lib/mods.functions";
-import { useApp } from "@/lib/i18n";
+import { useApp, SUPPORT_URL } from "@/lib/i18n";
 
 const modsQuery = queryOptions({ queryKey: ["mods"], queryFn: () => getMods(), staleTime: 5 * 60_000 });
 
@@ -14,8 +15,19 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Krysztok — Minecraft Mods" },
       { property: "og:description", content: "Live download stats from Modrinth and CurseForge." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: "/" },
+      { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "/" }],
+    scripts: [{
+      type: "application/ld+json",
+      children: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "Krysztok — Minecraft Mods",
+        description: "Minecraft mods by Krysztok, available on Modrinth and CurseForge.",
+      }),
+    }],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(modsQuery),
   component: Index,
@@ -23,10 +35,21 @@ export const Route = createFileRoute("/")({
 
 const fmt = (n: number, lang: string) => new Intl.NumberFormat(lang).format(n);
 
+type SortKey = "downloads" | "newest" | "az";
+
 function Index() {
   const { data } = useSuspenseQuery(modsQuery);
   const { t, lang } = useApp();
+  const [sort, setSort] = useState<SortKey>("downloads");
   const { totals } = data;
+  const mods = useMemo(() => {
+    const arr = [...data.mods];
+    if (sort === "newest") arr.sort((a, b) => (b.updated ?? "").localeCompare(a.updated ?? ""));
+    else if (sort === "az") arr.sort((a, b) => a.title.localeCompare(b.title));
+    else arr.sort((a, b) => b.total - a.total);
+    return arr;
+  }, [data.mods, sort]);
+
   return (
     <main>
       <section className="hero-bg relative overflow-hidden">
@@ -53,9 +76,29 @@ function Index() {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-16">
-        <h2 className="font-pixel text-xl text-foreground">{t.myMods}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-pixel text-xl text-foreground">{t.myMods}</h2>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ArrowUpDown className="h-4 w-4" />
+            <select
+              aria-label={t.sort}
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground"
+            >
+              <option value="downloads">{t.sortDownloads}</option>
+              <option value="newest">{t.sortNewest}</option>
+              <option value="az">{t.sortAZ}</option>
+            </select>
+          </label>
+        </div>
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {data.mods.map((m, i) => <ModCard key={m.key} mod={m} rank={i} />)}
+          {mods.map((m, i) => <ModCard key={m.key} mod={m} rank={i} showRank={sort === "downloads"} />)}
+        </div>
+        <div className="mt-12 text-center">
+          <a href={SUPPORT_URL} target="_blank" rel="noreferrer" className="platform-btn platform-primary">
+            <Heart className="h-4 w-4" /> {t.support}
+          </a>
         </div>
       </section>
     </main>
@@ -73,11 +116,11 @@ function Stat({ label, value, tone, icon }: { label: string; value: string; tone
   );
 }
 
-function ModCard({ mod, rank }: { mod: Mod; rank: number }) {
+function ModCard({ mod, rank, showRank }: { mod: Mod; rank: number; showRank: boolean }) {
   const { t, lang } = useApp();
   const max = Math.max(mod.total, 1);
   return (
-    <article className="block-card group flex flex-col p-5 transition hover:-translate-y-1">
+    <Link to="/mods/$slug" params={{ slug: mod.key }} className="block-card group flex flex-col p-5 transition hover:-translate-y-1">
       <div className="flex items-start gap-4">
         {mod.icon ? (
           <img src={mod.icon} alt={mod.title} loading="lazy" className="pixelated h-16 w-16 rounded-md border border-border object-cover" />
@@ -87,7 +130,7 @@ function ModCard({ mod, rank }: { mod: Mod; rank: number }) {
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-bold text-foreground">{mod.title}</h3>
           <div className="mt-1 flex items-center gap-1 text-sm text-primary">
-            {rank === 0 && <Flame className="h-4 w-4" />}
+            {showRank && rank === 0 && <Flame className="h-4 w-4" />}
             <Download className="h-3.5 w-3.5" /> {fmt(mod.total, lang)} {t.downloads}
           </div>
         </div>
@@ -103,17 +146,17 @@ function ModCard({ mod, rank }: { mod: Mod; rank: number }) {
         </div>
       )}
       <div className="mt-4 grid grid-cols-2 gap-2">
-        {mod.modrinth ? (
-          <a href={mod.modrinth.url} target="_blank" rel="noreferrer" className="platform-btn platform-modrinth">
-            Modrinth · {fmt(mod.modrinth.downloads, lang)} <ExternalLink className="h-3 w-3" />
-          </a>
-        ) : <span />}
+        {mod.modrinth && (
+          <span className="platform-btn platform-modrinth">
+            Modrinth · {fmt(mod.modrinth.downloads, lang)}
+          </span>
+        )}
         {mod.curseforge && (
-          <a href={mod.curseforge.url} target="_blank" rel="noreferrer" className="platform-btn platform-curseforge">
-            CurseForge · {fmt(mod.curseforge.downloads, lang)} <ExternalLink className="h-3 w-3" />
-          </a>
+          <span className="platform-btn platform-curseforge">
+            CurseForge · {fmt(mod.curseforge.downloads, lang)}
+          </span>
         )}
       </div>
-    </article>
+    </Link>
   );
 }

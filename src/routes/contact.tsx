@@ -13,8 +13,10 @@ export const Route = createFileRoute("/contact")({
       { property: "og:title", content: "Contact — Krysztok Minecraft Mods" },
       { property: "og:description", content: "Suggestions and custom Minecraft mod requests." },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "/contact" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "/contact" }],
   }),
   component: Contact,
 });
