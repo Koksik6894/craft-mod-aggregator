@@ -6,7 +6,7 @@ import { getMod } from "@/lib/mods.functions";
 import { useApp, SUPPORT_URL } from "@/lib/i18n";
 
 const modQuery = (key: string) =>
-  queryOptions({ queryKey: ["mod", key], queryFn: () => getMod(key), staleTime: 5 * 60_000 });
+  queryOptions({ queryKey: ["mod", key], queryFn: () => getMod({ data: key }), staleTime: 5 * 60_000 });
 
 export const Route = createFileRoute("/mods/$slug")({
   loader: async ({ params, context }) => {
