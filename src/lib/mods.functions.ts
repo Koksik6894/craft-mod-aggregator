@@ -71,6 +71,8 @@ export const getMods = createServerFn({ method: "GET" }).handler(async () => {
       );
       for (const d of details) {
         if (!d || !d.title || d.title.startsWith("project-")) continue;
+        // only released projects: must have a published file and real downloads
+        if (!d.download?.id || !(d.downloads?.total > 0)) continue;
         const k = norm(d.title);
         const cf = { url: d.urls?.curseforge ?? d.urls?.project, downloads: d.downloads?.total ?? 0 };
         const ex = map.get(k);
