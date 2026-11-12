@@ -15,6 +15,8 @@ export type Mod = {
 };
 
 const CF_AUTHOR = "krysztok";
+// CurseForge mods the author index (cfwidget) has not picked up yet
+const CF_EXTRA = ["minecraft/mc-mods/raven-post"];
 const MR_USER = "Krysztok";
 const UA = { "User-Agent": "krysztok-portfolio/1.0 (krysztokdev@gmail.com)" };
 
@@ -59,17 +61,21 @@ export const getMods = createServerFn({ method: "GET" }).handler(async () => {
     const r = await fetch(`https://api.cfwidget.com/author/search/${CF_AUTHOR}`);
     if (r.ok) {
       const author = (await r.json()) as { projects: { id: number; name: string }[] };
+      const ids = [...author.projects.map((p) => String(p.id)), ...CF_EXTRA];
       const details = await Promise.all(
-        author.projects.map(async (p) => {
+        ids.map(async (id) => {
           try {
-            const d = await fetch(`https://api.cfwidget.com/${p.id}`);
+            const d = await fetch(`https://api.cfwidget.com/${id}`);
             return d.ok ? ((await d.json()) as any) : null;
           } catch {
             return null;
           }
         }),
       );
+      const seen = new Set<number>();
       for (const d of details) {
+        if (!d || seen.has(d.id)) continue;
+        seen.add(d.id);
         if (!d || !d.title || d.title.startsWith("project-")) continue;
         // only released projects: must have a published file and real downloads
         if (!d.download?.id || !(d.downloads?.total > 0)) continue;
