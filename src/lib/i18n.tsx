@@ -10,6 +10,7 @@ type BaseDict = {
 type Dict = BaseDict & {
   sort: string; sortDownloads: string; sortNewest: string; sortAZ: string;
   support: string; back: string; accent: string;
+  allVersions: string; allLoaders: string; changelog: string; download: string; noMods: string;
 };
 
 export const LANGS: Record<string, { name: string; flag: string; t: BaseDict }> = {
@@ -32,9 +33,9 @@ export const LANGS: Record<string, { name: string; flag: string; t: BaseDict }> 
 
 // Translations for the newest features, merged over the English set when a language misses them.
 const EXTRA: Record<string, Partial<Dict>> = {
-  pl: { sort: "Sortuj", sortDownloads: "Najwięcej pobrań", sortNewest: "Najnowsze", sortAZ: "A–Z", support: "Wesprzyj mnie", back: "Wszystkie mody", accent: "Kolor strony" },
-  en: { sort: "Sort", sortDownloads: "Most downloads", sortNewest: "Newest", sortAZ: "A–Z", support: "Support me", back: "All mods", accent: "Accent color" },
-  de: { sort: "Sortieren", sortDownloads: "Meiste Downloads", sortNewest: "Neueste", sortAZ: "A–Z", support: "Unterstütze mich", back: "Alle Mods", accent: "Akzentfarbe" },
+  pl: { sort: "Sortuj", sortDownloads: "Najwięcej pobrań", sortNewest: "Najnowsze", sortAZ: "A–Z", support: "Wesprzyj mnie", back: "Wszystkie mody", accent: "Kolor strony", allVersions: "Wszystkie wersje", allLoaders: "Wszystkie loadery", changelog: "Lista zmian", download: "Pobierz", noMods: "Brak modów dla tych filtrów" },
+  en: { sort: "Sort", sortDownloads: "Most downloads", sortNewest: "Newest", sortAZ: "A–Z", support: "Support me", back: "All mods", accent: "Accent color", allVersions: "All versions", allLoaders: "All loaders", changelog: "Changelog", download: "Download", noMods: "No mods match these filters" },
+  de: { sort: "Sortieren", sortDownloads: "Meiste Downloads", sortNewest: "Neueste", sortAZ: "A–Z", support: "Unterstütze mich", back: "Alle Mods", accent: "Akzentfarbe", allVersions: "Alle Versionen", allLoaders: "Alle Loader", changelog: "Änderungen", download: "Herunterladen", noMods: "Keine Mods gefunden" },
   es: { sort: "Ordenar", sortDownloads: "Más descargas", sortNewest: "Más recientes", sortAZ: "A–Z", support: "Apóyame", back: "Todos los mods", accent: "Color de acento" },
   fr: { sort: "Trier", sortDownloads: "Plus de téléchargements", sortNewest: "Plus récents", sortAZ: "A–Z", support: "Soutenez-moi", back: "Tous les mods", accent: "Couleur d'accent" },
   it: { sort: "Ordina", sortDownloads: "Più download", sortNewest: "Più recenti", sortAZ: "A–Z", support: "Sostienimi", back: "Tutte le mod", accent: "Colore d'accento" },

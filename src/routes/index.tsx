@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { Download, Heart, Package, Flame, ArrowUpDown } from "lucide-react";
 import { getMods, type Mod } from "@/lib/mods.functions";
 import { useApp, SUPPORT_URL } from "@/lib/i18n";
+import { Reveal, CountUp } from "@/components/Motion";
+import { cmpVer } from "@/lib/mods.functions";
 
 const modsQuery = queryOptions({ queryKey: ["mods"], queryFn: () => getMods(), staleTime: 5 * 60_000 });
 
@@ -41,14 +43,18 @@ function Index() {
   const { data } = useSuspenseQuery(modsQuery);
   const { t, lang } = useApp();
   const [sort, setSort] = useState<SortKey>("downloads");
+  const [ver, setVer] = useState("");
+  const [loader, setLoader] = useState("");
   const { totals } = data;
+  const allVersions = useMemo(() => [...new Set(data.mods.flatMap((m) => m.gameVersions ?? []))].sort((a, b) => cmpVer(b, a)), [data.mods]);
+  const allLoaders = useMemo(() => [...new Set(data.mods.flatMap((m) => m.loaders))].sort(), [data.mods]);
   const mods = useMemo(() => {
-    const arr = [...data.mods];
+    const arr = data.mods.filter((m) => (!ver || (m.gameVersions ?? []).includes(ver)) && (!loader || m.loaders.includes(loader)));
     if (sort === "newest") arr.sort((a, b) => (b.updated ?? "").localeCompare(a.updated ?? ""));
     else if (sort === "az") arr.sort((a, b) => a.title.localeCompare(b.title));
     else arr.sort((a, b) => b.total - a.total);
     return arr;
-  }, [data.mods, sort]);
+  }, [data.mods, sort, ver, loader]);
 
   return (
     <main>
@@ -63,7 +69,7 @@ function Index() {
               <div className="flex items-center justify-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
                 <Download className="h-4 w-4" /> {t.total}
               </div>
-              <div className="mt-3 font-pixel text-4xl text-gradient sm:text-6xl">{fmt(totals.all, lang)}</div>
+              <div className="mt-3 font-pixel text-4xl text-gradient sm:text-6xl"><CountUp value={totals.all} format={(n) => fmt(n, lang)} /></div>
               <div className="mt-6 grid grid-cols-2 gap-3 text-left sm:grid-cols-4">
                 <Stat label="Modrinth" value={fmt(totals.modrinth, lang)} tone="modrinth" />
                 <Stat label="CurseForge" value={fmt(totals.curseforge, lang)} tone="curseforge" />
@@ -78,6 +84,15 @@ function Index() {
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-pixel text-xl text-foreground">{t.myMods}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+          <select aria-label={t.allVersions} value={ver} onChange={(e) => setVer(e.target.value)} className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground">
+            <option value="">{t.allVersions}</option>
+            {allVersions.map((v) => <option key={v} value={v}>{v}</option>)}
+          </select>
+          <select aria-label={t.allLoaders} value={loader} onChange={(e) => setLoader(e.target.value)} className="h-9 rounded-md border border-border bg-card px-2 text-sm capitalize text-foreground">
+            <option value="">{t.allLoaders}</option>
+            {allLoaders.map((l) => <option key={l} value={l}>{l}</option>)}
+          </select>
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <ArrowUpDown className="h-4 w-4" />
             <select
@@ -91,10 +106,16 @@ function Index() {
               <option value="az">{t.sortAZ}</option>
             </select>
           </label>
+          </div>
         </div>
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {mods.map((m, i) => <ModCard key={m.key} mod={m} rank={i} showRank={sort === "downloads"} />)}
+          {mods.map((m, i) => (
+            <Reveal key={m.key} delay={(i % 3) * 90} className="h-full">
+              <ModCard mod={m} rank={i} showRank={sort === "downloads"} />
+            </Reveal>
+          ))}
         </div>
+        {mods.length === 0 && <p className="mt-8 text-center text-muted-foreground">{t.noMods}</p>}
         <div className="mt-12 text-center">
           <a href={SUPPORT_URL} target="_blank" rel="noreferrer" className="platform-btn platform-primary">
             <Heart className="h-4 w-4" /> {t.support}
@@ -120,7 +141,7 @@ function ModCard({ mod, rank, showRank }: { mod: Mod; rank: number; showRank: bo
   const { t, lang } = useApp();
   const max = Math.max(mod.total, 1);
   return (
-    <Link to="/mods/$slug" params={{ slug: mod.key }} className="block-card group flex flex-col p-5 transition hover:-translate-y-1">
+    <Link to="/mods/$slug" params={{ slug: mod.key }} className="block-card group flex h-full flex-col p-5 transition hover:-translate-y-1">
       <div className="flex items-start gap-4">
         {mod.icon ? (
           <img src={mod.icon} alt={mod.title} loading="lazy" className="pixelated h-16 w-16 rounded-md border border-border object-cover" />
@@ -140,9 +161,11 @@ function ModCard({ mod, rank, showRank }: { mod: Mod; rank: number; showRank: bo
         <div className="bg-modrinth" style={{ width: `${((mod.modrinth?.downloads ?? 0) / max) * 100}%` }} />
         <div className="bg-curseforge" style={{ width: `${((mod.curseforge?.downloads ?? 0) / max) * 100}%` }} />
       </div>
-      {mod.loaders.length > 0 && (
+      {(mod.loaders.length > 0 || (mod.gameVersions ?? []).length > 0) && (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {mod.loaders.map((l) => <span key={l} className="chip">{l}</span>)}
+          {mod.loaders.map((l) => <span key={l} className="chip capitalize">{l}</span>)}
+          {(mod.gameVersions ?? []).slice(0, 3).map((v) => <span key={v} className="chip text-primary">{v}</span>)}
+          {(mod.gameVersions ?? []).length > 3 && <span className="chip">+{mod.gameVersions.length - 3}</span>}
         </div>
       )}
       <div className="mt-4 grid grid-cols-2 gap-2">

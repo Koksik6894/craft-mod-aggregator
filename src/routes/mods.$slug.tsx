@@ -100,7 +100,8 @@ function ModPage() {
 
           {(mod.categories.length > 0 || mod.loaders.length > 0) && (
             <div className="mt-5 flex flex-wrap gap-1.5">
-              {mod.loaders.map((l) => <span key={"loader-" + l} className="chip">{l}</span>)}
+              {mod.loaders.map((l) => <span key={"loader-" + l} className="chip capitalize">{l}</span>)}
+              {(mod.gameVersions ?? []).map((v) => <span key={"v-" + v} className="chip text-primary">{v}</span>)}
               {mod.categories.map((c) => <span key={c} className="chip">{c}</span>)}
             </div>
           )}
@@ -121,6 +122,30 @@ function ModPage() {
             </a>
           </div>
         </div>
+
+        {data.versions.length > 0 && (
+          <section className="block-card mt-6 p-6 sm:p-8">
+            <h2 className="font-pixel text-base text-foreground">{t.changelog}</h2>
+            <ul className="mt-5 divide-y divide-border">
+              {data.versions.map((v, i) => (
+                <li key={v.platform + v.url + i} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <div className="font-bold text-foreground">{v.name}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                      <span>{new Date(v.date).toLocaleDateString(lang, { year: "numeric", month: "short", day: "numeric" })}</span>
+                      {v.type !== "release" && <span className="chip">{v.type}</span>}
+                      {v.loaders.map((l) => <span key={l} className="chip capitalize">{l}</span>)}
+                      {v.gameVersions.slice(0, 4).map((g) => <span key={g} className="chip text-primary">{g}</span>)}
+                    </div>
+                  </div>
+                  <a href={v.url} target="_blank" rel="noreferrer" className={`platform-btn ${v.platform === "modrinth" ? "platform-modrinth" : "platform-curseforge"}`}>
+                    <Download className="h-3.5 w-3.5" /> {t.download} · {v.platform === "modrinth" ? "Modrinth" : "CurseForge"}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {html && (
           <article className="block-card prose-mod mt-6 p-6 sm:p-8" dangerouslySetInnerHTML={{ __html: html }} />

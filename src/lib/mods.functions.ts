@@ -7,6 +7,7 @@ export type Mod = {
   icon: string | null;
   categories: string[];
   loaders: string[];
+  gameVersions: string[];
   updated: string | null;
   modrinthSlug?: string;
   modrinth?: { url: string; downloads: number; followers: number };
@@ -19,6 +20,23 @@ const CF_AUTHOR = "krysztok";
 const CF_EXTRA = ["minecraft/mc-mods/raven-post"];
 const MR_USER = "Krysztok";
 const UA = { "User-Agent": "krysztok-portfolio/1.0 (krysztokdev@gmail.com)" };
+
+const LOADERS = ["fabric", "forge", "neoforge", "quilt"];
+const isMc = (v: string) => /^\d+(\.\d+)+$/.test(v);
+export const cmpVer = (a: string, b: string) => {
+  const x = a.split(".").map(Number), y = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    const d = (x[i] ?? 0) - (y[i] ?? 0);
+    if (d) return d;
+  }
+  return 0;
+};
+const uniqSorted = (v: string[]) => [...new Set(v)].filter(isMc).sort((a, b) => cmpVer(b, a));
+
+export type ModVersion = {
+  name: string; date: string; gameVersions: string[]; loaders: string[];
+  url: string; platform: "modrinth" | "curseforge"; type: string; changelog?: string | null;
+};
 
 const norm = (s: string) =>
   s.replace(/\(.*?\)/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -41,7 +59,8 @@ export const getMods = createServerFn({ method: "GET" }).handler(async () => {
           description: p.description,
           icon: p.icon_url ?? null,
           categories: p.categories ?? [],
-          loaders: p.loaders ?? [],
+          loaders: (p.loaders ?? []).filter((l: string) => LOADERS.includes(l)),
+          gameVersions: uniqSorted(p.game_versions ?? []),
           updated: p.updated ?? null,
           modrinthSlug: p.slug,
           modrinth: {
@@ -81,8 +100,14 @@ export const getMods = createServerFn({ method: "GET" }).handler(async () => {
         if (!d.download?.id || !(d.downloads?.total > 0)) continue;
         const k = norm(d.title);
         const cf = { url: d.urls?.curseforge ?? d.urls?.project, downloads: d.downloads?.total ?? 0 };
+        const cfLoaders = Object.keys(d.versions ?? {}).map((x) => x.toLowerCase()).filter((x) => LOADERS.includes(x));
+        const cfFileTags: string[] = (d.files ?? []).flatMap((f: any) => f.versions ?? []);
+        const cfLoaders2 = [...new Set([...cfLoaders, ...cfFileTags.map((x) => x.toLowerCase()).filter((x) => LOADERS.includes(x))])];
+        const cfGame = uniqSorted([...Object.keys(d.versions ?? {}), ...cfFileTags]);
         const ex = map.get(k);
         if (ex) {
+          ex.loaders = [...new Set([...ex.loaders, ...cfLoaders2])];
+          ex.gameVersions = uniqSorted([...ex.gameVersions, ...cfGame]);
           ex.curseforge = cf;
           if (!ex.icon) ex.icon = d.thumbnail ?? null;
         } else {
@@ -92,7 +117,8 @@ export const getMods = createServerFn({ method: "GET" }).handler(async () => {
             description: d.summary ?? "",
             icon: d.thumbnail ?? null,
             categories: d.categories ?? [],
-            loaders: [],
+            loaders: cfLoaders2,
+            gameVersions: cfGame,
             updated: d.download?.uploaded_at ?? null,
             curseforge: cf,
             total: 0,
@@ -139,5 +165,39 @@ export const getMod = createServerFn({ method: "GET" })
         console.error("modrinth body", e);
       }
     }
-    return { mod, body };
+    const versions: ModVersion[] = [];
+    if (mod?.modrinthSlug) {
+      try {
+        const r = await fetch(`https://api.modrinth.com/v2/project/${mod.modrinthSlug}/version`, { headers: UA });
+        if (r.ok) {
+          for (const v of ((await r.json()) as any[]).slice(0, 15)) {
+            versions.push({
+              name: v.name || v.version_number, date: v.date_published,
+              gameVersions: uniqSorted(v.game_versions ?? []), loaders: v.loaders ?? [],
+              url: `https://modrinth.com/mod/${mod.modrinthSlug}/version/${v.id}`,
+              platform: "modrinth", type: v.version_type ?? "release", changelog: v.changelog ?? null,
+            });
+          }
+        }
+      } catch (e) { console.error("modrinth versions", e); }
+    }
+    if (mod?.curseforge?.url) {
+      try {
+        const id = mod.curseforge.url.split("/").pop();
+        const r = await fetch(`https://api.cfwidget.com/minecraft/mc-mods/${id}`);
+        if (r.ok) {
+          const d = (await r.json()) as any;
+          for (const f of (d.files ?? []).slice(0, 15)) {
+            const tags: string[] = f.versions ?? [];
+            versions.push({
+              name: f.display || f.name, date: f.uploaded_at,
+              gameVersions: uniqSorted(tags), loaders: tags.map((x) => x.toLowerCase()).filter((x) => LOADERS.includes(x)),
+              url: f.url, platform: "curseforge", type: f.type ?? "release",
+            });
+          }
+        }
+      } catch (e) { console.error("cf versions", e); }
+    }
+    versions.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
+    return { mod, body, versions: versions.slice(0, 20) };
   });

@@ -193,3 +193,7 @@ html[data-accent="rose"] { --primary: oklch(0.6 0.2 15); --ring: oklch(0.6 0.2 1
   & th, & td { border: 1px solid var(--border); padding: 6px 10px; }
   & blockquote { border-left: 3px solid var(--primary); padding-left: 12px; color: var(--muted-foreground); }
 }
+
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+.reveal-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
