@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794617354598,
+      "tag": "0000_private_api_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794617447170,
+      "tag": "0001_revoke_owner_on_email_change",
+      "breakpoints": true
+    }
+  ]
+}

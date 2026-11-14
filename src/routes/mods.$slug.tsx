@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { marked } from "marked";
+import sanitizeHtml from "sanitize-html";
 import { ArrowLeft, Download, ExternalLink, Heart, Package } from "lucide-react";
 import { getMod } from "@/lib/mods.functions";
 import { useApp, SUPPORT_URL } from "@/lib/i18n";
@@ -61,7 +62,11 @@ function ModPage() {
   const { t, lang } = useApp();
   const mod = data.mod;
   if (!mod) throw notFound();
-  const html = data.body ? (marked.parse(data.body, { async: false }) as string) : "";
+  const html = data.body ? sanitizeHtml(marked.parse(data.body, { async: false }) as string, {
+    allowedTags: [...sanitizeHtml.defaults.allowedTags, "img"],
+    allowedAttributes: { ...sanitizeHtml.defaults.allowedAttributes, img: ["src", "alt", "width", "height"] },
+    allowedSchemes: ["https", "http", "mailto"],
+  }) : "";
   const updated = mod.updated
     ? new Date(mod.updated).toLocaleDateString(lang, { year: "numeric", month: "short", day: "numeric" })
     : null;

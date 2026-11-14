@@ -8,14 +8,14 @@ export function SiteHeader() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   return (
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
         <Link to="/" className="flex items-center gap-2 font-pixel text-xs text-foreground sm:text-sm">
           <span className="grid h-9 w-9 place-items-center rounded-md bg-primary text-primary-foreground shadow-glow">
             <Pickaxe className="h-5 w-5" />
           </span>
           KRYSZTOK
         </Link>
-        <nav className="flex items-center gap-2">
+        <nav className="flex flex-wrap items-center gap-2">
           <Link to="/" className="nav-link" activeProps={{ className: "nav-link-active" }} activeOptions={{ exact: true }}>{t.myMods}</Link>
           <Link to="/contact" className="nav-link" activeProps={{ className: "nav-link-active" }}>{t.contact}</Link>
           <a

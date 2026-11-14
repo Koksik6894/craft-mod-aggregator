@@ -12,6 +12,8 @@ import { useEffect, type ReactNode } from "react";
 
 import { AppProvider } from "@/lib/i18n";
 import { SiteHeader } from "@/components/SiteHeader";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -114,6 +116,16 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (!["SIGNED_IN", "SIGNED_OUT", "USER_UPDATED"].includes(event)) return;
+      void router.invalidate();
+      if (event === "SIGNED_OUT") queryClient.removeQueries({ queryKey: ["api-settings"] });
+      else void queryClient.invalidateQueries();
+    });
+    return () => data.subscription.unsubscribe();
+  }, [router, queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -123,6 +135,7 @@ function RootComponent() {
         <Outlet />
         <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()} Krysztok · krysztokdev@gmail.com
+          <div className="mt-3"><Button asChild variant="link"><Link to="/settings/api">Panel właściciela</Link></Button></div>
         </footer>
       </AppProvider>
     </QueryClientProvider>

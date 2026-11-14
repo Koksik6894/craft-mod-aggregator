@@ -4,8 +4,7 @@ Stworz mi strone do moich modów minecraft curseforge+modrinth zeby było zliczo
 
 https://modrinth.com/user/Krysztok
 https://www.curseforge.com/members/krysztok/projects
-curseforge api - a9017733-7e30-46e2-ba4a-2b2e875659fd
-modrinth api - mrp_wdhfdCCYApHkc4cFYRX9nQj3q2HFPhZExSZg1HE73CRQpCkUURrKifseiGvs
+API credentials are private and must never be included in source files. Replace CurseForge credentials through the owner-only settings panel.
 
 
 i masz dokumetacje zeby wiedziec jak co zrobic:

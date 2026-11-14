@@ -10,12 +10,24 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ModsSlugRouteImport } from './routes/mods.$slug'
+import { Route as AuthenticatedSettingsApiRouteImport } from './routes/_authenticated/settings.api'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -28,33 +40,55 @@ const ModsSlugRoute = ModsSlugRouteImport.update({
   path: '/mods/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSettingsApiRoute =
+  AuthenticatedSettingsApiRouteImport.update({
+    id: '/settings/api',
+    path: '/settings/api',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/mods/$slug': typeof ModsSlugRoute
+  '/settings/api': typeof AuthenticatedSettingsApiRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/mods/$slug': typeof ModsSlugRoute
+  '/settings/api': typeof AuthenticatedSettingsApiRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/mods/$slug': typeof ModsSlugRoute
+  '/_authenticated/settings/api': typeof AuthenticatedSettingsApiRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/contact' | '/mods/$slug'
+  fullPaths: '/' | '/auth' | '/contact' | '/mods/$slug' | '/settings/api'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/contact' | '/mods/$slug'
-  id: '__root__' | '/' | '/contact' | '/mods/$slug'
+  to: '/' | '/auth' | '/contact' | '/mods/$slug' | '/settings/api'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/contact'
+    | '/mods/$slug'
+    | '/_authenticated/settings/api'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   ModsSlugRoute: typeof ModsSlugRoute
 }
@@ -66,6 +100,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -82,11 +130,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/settings/api': {
+      id: '/_authenticated/settings/api'
+      path: '/settings/api'
+      fullPath: '/settings/api'
+      preLoaderRoute: typeof AuthenticatedSettingsApiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedSettingsApiRoute: typeof AuthenticatedSettingsApiRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedSettingsApiRoute: AuthenticatedSettingsApiRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   ModsSlugRoute: ModsSlugRoute,
 }

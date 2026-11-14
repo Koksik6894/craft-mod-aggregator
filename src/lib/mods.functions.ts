@@ -20,7 +20,6 @@ const CF_AUTHOR_ID = 128100944;
 const CF_API = "https://api.curseforge.com/v1";
 // modLoader enum from the CurseForge API
 const CF_LOADER: Record<number, string> = { 1: "forge", 4: "fabric", 5: "quilt", 6: "neoforge" };
-const cfKey = () => process.env["CURSEFORGE_API_KEY"];
 
 type CfItem = {
   id: number; title: string; summary: string; icon: string | null; categories: string[];
@@ -28,8 +27,7 @@ type CfItem = {
 };
 
 // Official CurseForge API when a key is set; free cfwidget mirror otherwise.
-async function loadCurseForge(): Promise<CfItem[]> {
-  const key = cfKey();
+async function loadCurseForge(key: string | undefined): Promise<CfItem[]> {
   if (key) {
     const out: CfItem[] = [];
     for (let index = 0; index < 500; index += 50) {
@@ -128,8 +126,10 @@ export const getMods = createServerFn({ method: "GET" }).handler(async () => {
     console.error("modrinth", e);
   }
 
-  try {
-    const items = await loadCurseForge();
+   try {
+     const { resolveCurseForgeKey } = await import("./api-key.server");
+     const key = await resolveCurseForgeKey(process.env["CURSEFORGE_API_KEY"], process.env["API_SETTINGS_ENCRYPTION_KEY"]);
+     const items = await loadCurseForge(key);
     for (const it of items) {
       const k = norm(it.title);
       const cf = { url: it.url, downloads: it.downloads, id: it.id };
@@ -202,7 +202,8 @@ export const getMod = createServerFn({ method: "GET" })
         }
       } catch (e) { console.error("modrinth versions", e); }
     }
-    const apiKey = cfKey();
+    const { resolveCurseForgeKey } = await import("./api-key.server");
+    const apiKey = await resolveCurseForgeKey(process.env["CURSEFORGE_API_KEY"], process.env["API_SETTINGS_ENCRYPTION_KEY"]);
     if (apiKey && mod?.curseforge?.id) {
       try {
         const r = await fetch(`${CF_API}/mods/${mod.curseforge.id}/files?pageSize=15`, { headers: { "x-api-key": apiKey, Accept: "application/json" } });
