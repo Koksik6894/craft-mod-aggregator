@@ -86,6 +86,7 @@ const uniqSorted = (v: string[]) => [...new Set(v)].filter(isMc).sort((a, b) => 
 export type ModVersion = {
   name: string; date: string; gameVersions: string[]; loaders: string[];
   url: string; platform: "modrinth" | "curseforge"; type: string; changelog?: string | null;
+  curseforgeModId?: number; curseforgeFileId?: number;
 };
 
 const norm = (s: string) =>
@@ -127,8 +128,7 @@ export const getMods = createServerFn({ method: "GET" }).handler(async () => {
   }
 
    try {
-     const { resolveCurseForgeKey } = await import("./api-key.server");
-     const key = await resolveCurseForgeKey(process.env["CURSEFORGE_API_KEY"], process.env["API_SETTINGS_ENCRYPTION_KEY"]);
+     const key = process.env["CURSEFORGE_API_KEY"];
      const items = await loadCurseForge(key);
     for (const it of items) {
       const k = norm(it.title);
@@ -202,8 +202,7 @@ export const getMod = createServerFn({ method: "GET" })
         }
       } catch (e) { console.error("modrinth versions", e); }
     }
-    const { resolveCurseForgeKey } = await import("./api-key.server");
-    const apiKey = await resolveCurseForgeKey(process.env["CURSEFORGE_API_KEY"], process.env["API_SETTINGS_ENCRYPTION_KEY"]);
+    const apiKey = process.env["CURSEFORGE_API_KEY"];
     if (apiKey && mod?.curseforge?.id) {
       try {
         const r = await fetch(`${CF_API}/mods/${mod.curseforge.id}/files?pageSize=15`, { headers: { "x-api-key": apiKey, Accept: "application/json" } });
@@ -214,6 +213,7 @@ export const getMod = createServerFn({ method: "GET" })
               name: f.displayName || f.fileName, date: f.fileDate,
               gameVersions: uniqSorted(tags), loaders: tags.map((x) => x.toLowerCase()).filter((x) => LOADERS.includes(x)),
               url: `${mod.curseforge.url}/files/${f.id}`, platform: "curseforge",
+              curseforgeModId: mod.curseforge.id, curseforgeFileId: f.id,
               type: f.releaseType === 2 ? "beta" : f.releaseType === 3 ? "alpha" : "release",
             });
           }
@@ -238,4 +238,26 @@ export const getMod = createServerFn({ method: "GET" })
     }
     versions.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
     return { mod, body, versions: versions.slice(0, 20) };
+  });
+
+export const getCurseForgeChangelog = createServerFn({ method: "GET" })
+  .inputValidator((input: { modId: number; fileId: number }) => {
+    if (!Number.isSafeInteger(input.modId) || input.modId <= 0 || !Number.isSafeInteger(input.fileId) || input.fileId <= 0) throw new Error("Invalid version");
+    return input;
+  })
+  .handler(async ({ data }) => {
+    const key = process.env["CURSEFORGE_API_KEY"];
+    if (!key) return { html: null, unavailable: true };
+    try {
+      const headers = { "x-api-key": key, Accept: "application/json" };
+      const project = await fetch(`${CF_API}/mods/${data.modId}`, { headers, signal: AbortSignal.timeout(10_000) });
+      if (!project.ok) return { html: null, unavailable: true };
+      const { data: mod } = await project.json() as { data: { status: number; isAvailable: boolean; authors: { id: number }[] } };
+      if (mod.status !== 4 || !mod.isAvailable || !mod.authors.some(author => author.id === CF_AUTHOR_ID)) return { html: null, unavailable: true };
+      const response = await fetch(`${CF_API}/mods/${data.modId}/files/${data.fileId}/changelog`, { headers, signal: AbortSignal.timeout(10_000) });
+      if (!response.ok) return { html: null, unavailable: response.status !== 404 };
+      const payload = await response.json() as { data?: string };
+      const { cleanChangelog } = await import("./changelog");
+      return { html: cleanChangelog(payload.data), unavailable: false };
+    } catch { return { html: null, unavailable: true }; }
   });

@@ -5,6 +5,7 @@ import sanitizeHtml from "sanitize-html";
 import { ArrowLeft, Download, ExternalLink, Heart, Package } from "lucide-react";
 import { getMod } from "@/lib/mods.functions";
 import { useApp, SUPPORT_URL } from "@/lib/i18n";
+import { VersionChangelog } from "@/components/VersionChangelog";
 
 const modQuery = (key: string) =>
   queryOptions({ queryKey: ["mod", key], queryFn: () => getMod({ data: key }), staleTime: 5 * 60_000 });
@@ -146,6 +147,7 @@ function ModPage() {
                   <a href={v.url} target="_blank" rel="noreferrer" className={`platform-btn ${v.platform === "modrinth" ? "platform-modrinth" : "platform-curseforge"}`}>
                     <Download className="h-3.5 w-3.5" /> {t.download} · {v.platform === "modrinth" ? "Modrinth" : "CurseForge"}
                   </a>
+                  {(v.platform === "modrinth" || v.curseforgeFileId) && <VersionChangelog version={v} />}
                 </li>
               ))}
             </ul>

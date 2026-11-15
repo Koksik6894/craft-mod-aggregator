@@ -1,4 +1,6 @@
 - [x] Add owner-only sign-in and API settings with write-only encrypted CurseForge credential.
 - [x] Use saved credential for official CurseForge requests and remove exposed credentials from source.
 - [x] Test signed-out access denial, encryption, secret-free status responses, and mobile panel behavior.
-- [ ] Verify key replacement as the owner: requires the owner to sign in with the verified contact mailbox; no auth users exist yet.
+- [ ] Remove the admin panel and use only the server-side Cloud secret for CurseForge.
+- [ ] Show CurseForge file changelogs on click when supplied by the author.
+- [ ] Explain hosting limitation: Cloudflare deployment configuration is unsupported; use Lovable Publish instead.

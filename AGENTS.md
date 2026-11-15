@@ -9,6 +9,5 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- API settings use authenticated server functions and a protected user_roles row; only the verified owner mailbox receives the role, never the first visitor or editable user metadata.
-- Store replaceable API credentials encrypted with AES-GCM in a service-role-only table; never return ciphertext or plaintext to the browser, and keep encryption material in Cloud secrets.
+- Keep the CurseForge credential only in the server-side Cloud secret and read it inside server handlers; this public site has no admin panel or login requirement.
 - Sanitize external mod Markdown before rendering HTML so descriptions cannot execute scripts in the owner's session.

@@ -4,7 +4,7 @@ Stworz mi strone do moich modów minecraft curseforge+modrinth zeby było zliczo
 
 https://modrinth.com/user/Krysztok
 https://www.curseforge.com/members/krysztok/projects
-API credentials are private and must never be included in source files. Replace CurseForge credentials through the owner-only settings panel.
+API credentials are private and must never be included in source files. Configure CURSEFORGE_API_KEY in Lovable Project Settings → Secrets; it is read only on the server.
 
 
 i masz dokumetacje zeby wiedziec jak co zrobic:

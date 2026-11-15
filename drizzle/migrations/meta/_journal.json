@@ -15,6 +15,13 @@
       "when": 1794617447170,
       "tag": "0001_revoke_owner_on_email_change",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794700899394,
+      "tag": "0002_deprecate_api_settings",
+      "breakpoints": true
     }
   ]
 }
